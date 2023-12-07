@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Insulin Dosage Calculator</title>
+</head>
+<style>
+  table {
+    border-collapse: collapse;
+    width: 30%;
+    table-layout: auto; /* Allow columns to adjust based on content */
+  }
+  th, td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+    white-space: nowrap; /* Prevent text wrapping in columns */
+  }
+  th {
+    background-color: #f2f2f2;
+    max-width: 200px; /* Set a maximum width for headers */
+  }
+</style>
+<body>
+  <h1>Insulin Dosage Calculator</h1>
+  <div>
+    <label for="morningDose">Morning Dose (units):</label>
+    <input type="number" id="morningDose"  value="0">
+  </div>
+  <div>
+    <label for="eveningDose">Evening Dose (units):</label>
+    <input type="number" id="eveningDose" value="0">
+  </div>
+  <div>
+    <label for="primingLoss">Priming Loss (units):</label>
+    <input type="number" id="primingLoss" value="2">
+  </div>
+  <div>
+    <label for="days">Days:</label>
+    <input type="number" id="days" value="90">
+  </div>
+  <div id="resultDisplay"></div>
+  <table id="resultTable"></table>
+
+  <script>
+    document.getElementById('morningDose').addEventListener('input', calculateUsage);
+    document.getElementById('eveningDose').addEventListener('input', calculateUsage);
+    document.getElementById('primingLoss').addEventListener('input', calculateUsage);
+    document.getElementById('days').addEventListener('input', calculateUsage);
+
+    function roundToMultiple(number, multiple) {
+      return Math.ceil(number / multiple) * multiple;
+    }
+
+    function calculateInsulin(penType, totalInsulinUnitsPrescribed, days) {
+      var insulinPens = {
+        Basaglar_Kwikpen: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Lantus_Solostar: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Levemir_Flextouch: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Toujeo_Max_Solostar: { unitsPerMl: 300, mlPerPen: 3, penPerBox: 2 },
+        Toujeo_Solostar: { unitsPerMl: 300, mlPerPen: 1.5, penPerBox: 3 },
+        Tresiba_Flextouch_U100: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Tresiba_Flextouch_U200: { unitsPerMl: 200, mlPerPen: 3, penPerBox: 3 }
+      };
+
+      var pen = insulinPens[penType];
+      var actualDaysMl = totalInsulinUnitsPrescribed / pen.unitsPerMl;
+      var mlPerBox = pen.mlPerPen * pen.penPerBox;
+      var prescribedMl = roundToMultiple(actualDaysMl, mlPerBox);
+      var boxes = prescribedMl / mlPerBox;
+      var daysLasting = Math.floor(prescribedMl / actualDaysMl * days);
+
+      return { penType, prescribedMl, boxes, daysLasting };
+    }
+	
+    function generateInsulinRows(pens) {
+	let rows = '';
+	pens.forEach(pen => {
+		const { penType, prescribedMl, boxes, daysLasting } = pen;
+		const penName = penType.replace(/_/g, ' '); // Replace underscores with spaces
+		rows += `
+			<tr>
+			<td>${penName}</td>
+			<td>${prescribedMl} mL</td>
+			<td>${boxes}</td>
+			<td>${daysLasting}</td>
+		</tr>
+		`;
+	});
+	return rows;
+	}
+
+    
+    function calculateUsage() {
+      var morningDose = parseFloat(document.getElementById("morningDose").value);
+      var eveningDose = parseFloat(document.getElementById("eveningDose").value);
+      var primingLoss = parseFloat(document.getElementById("primingLoss").value);
+      var days = parseFloat(document.getElementById("days").value);
+      var resultTable = document.getElementById("resultTable");
+      var resultDisplay = document.getElementById("resultDisplay");
+
+      if (!isNaN(morningDose) && !isNaN(eveningDose) && eveningDose >= 0 && morningDose >= 0 && morningDose+eveningDose >= 0) {
+		if (morningDose != 0) {
+			morningDose += primingLoss; // Add 2 units if pen used in the morning
+		}
+		if (eveningDose != 0) {
+			eveningDose += primingLoss; // Add 2 units if pen used in the evening
+		}
+        var totaldailyInsulinUsage = morningDose + eveningDose;
+        var totalinsulinunitsprescribed = days * totaldailyInsulinUsage;
+
+        const pens = [
+			calculateInsulin('Basaglar_Kwikpen', totalinsulinunitsprescribed, days),
+			calculateInsulin('Lantus_Solostar', totalinsulinunitsprescribed, days),
+			calculateInsulin('Levemir_Flextouch', totalinsulinunitsprescribed, days),
+			calculateInsulin('Toujeo_Max_Solostar', totalinsulinunitsprescribed, days),
+			calculateInsulin('Toujeo_Solostar', totalinsulinunitsprescribed, days),
+			calculateInsulin('Tresiba_Flextouch_U100', totalinsulinunitsprescribed, days),
+			calculateInsulin('Tresiba_Flextouch_U200', totalinsulinunitsprescribed, days)
+			];
+
+        resultDisplay.innerHTML = "&nbsp;<br>Total daily insulin usage: " + totaldailyInsulinUsage + " units<br>Actual " + days + " day usage: " + totalinsulinunitsprescribed + " units<br>&nbsp;";
+       resultTable.innerHTML = `
+        <tr>
+          <th>Insulin Pen</th>
+          <th>Volume</th>
+          <th>Boxes</th>
+          <th>Days</th>
+        </tr>
+        ${generateInsulinRows(pens)}
+      `;
+      } else {
+	    resultDisplay.innerHTML = "Please enter valid doses in units.";
+        resultTable.innerHTML = "";
+      }
+    }
+
+  </script>
+</body>
+</html>
+
+  <script>
+    function roundToMultiple(number, multiple) {
+      return Math.ceil(number / multiple) * multiple;
+    }
+
+    function calculateInsulin(penType, totalInsulinUnitsPrescribed, days) {
+      var insulinPens = {
+        Basaglar_Kwikpen: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Lantus_Solostar: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Levemir_Flextouch: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Toujeo_Max_Solostar: { unitsPerMl: 300, mlPerPen: 3, penPerBox: 2 },
+        Toujeo_Solostar: { unitsPerMl: 300, mlPerPen: 1.5, penPerBox: 3 },
+        Tresiba_Flextouch_U100: { unitsPerMl: 100, mlPerPen: 3, penPerBox: 5 },
+        Tresiba_Flextouch_U200: { unitsPerMl: 200, mlPerPen: 3, penPerBox: 3 }
+      };
+
+      var pen = insulinPens[penType];
+      var actualDaysMl = totalInsulinUnitsPrescribed / pen.unitsPerMl;
+      var mlPerBox = pen.mlPerPen * pen.penPerBox;
+      var prescribedMl = roundToMultiple(actualDaysMl, mlPerBox);
+      var boxes = prescribedMl / mlPerBox;
+      var daysLasting = Math.floor(prescribedMl / actualDaysMl * days);
+
+      return { penType, prescribedMl, boxes, daysLasting };
+    }
+	
+    function generateInsulinRows(pens) {
+	let rows = '';
+	pens.forEach(pen => {
+		const { penType, prescribedMl, boxes, daysLasting } = pen;
+		const penName = penType.replace(/_/g, ' '); // Replace underscores with spaces
+		rows += `
+			<tr>
+			<td>${penName}</td>
+			<td>${prescribedMl} mL</td>
+			<td>${boxes}</td>
+			<td>${daysLasting}</td>
+		</tr>
+		`;
+	});
+	return rows;
+	}
+
+    
+    function calculateUsage() {
+      var morningDose = parseFloat(document.getElementById("morningDose").value);
+      var eveningDose = parseFloat(document.getElementById("eveningDose").value);
+      var primingLoss = parseFloat(document.getElementById("primingLoss").value);
+      var days = parseFloat(document.getElementById("days").value);
+      var resultTable = document.getElementById("resultTable");
+      var resultDisplay = document.getElementById("resultDisplay");
+
+      if (!isNaN(morningDose) && !isNaN(eveningDose) && eveningDose >= 0 && morningDose >= 0) {
+		if (morningDose != 0) {
+			morningDose += primingLoss; // Add 2 units if pen used in the morning
+		}
+		if (eveningDose != 0) {
+			eveningDose += primingLoss; // Add 2 units if pen used in the evening
+		}
+        var totaldailyInsulinUsage = morningDose + eveningDose;
+        var totalinsulinunitsprescribed = days * totaldailyInsulinUsage;
+
+        const pens = [
+			calculateInsulin('Basaglar_Kwikpen', totalinsulinunitsprescribed, days),
+			calculateInsulin('Lantus_Solostar', totalinsulinunitsprescribed, days),
+			calculateInsulin('Levemir_Flextouch', totalinsulinunitsprescribed, days),
+			calculateInsulin('Toujeo_Max_Solostar', totalinsulinunitsprescribed, days),
+			calculateInsulin('Toujeo_Solostar', totalinsulinunitsprescribed, days),
+			calculateInsulin('Tresiba_Flextouch_U100', totalinsulinunitsprescribed, days),
+			calculateInsulin('Tresiba_Flextouch_U200', totalinsulinunitsprescribed, days)
+			];
+
+        resultDisplay.innerHTML = "&nbsp;<br>Total daily insulin usage: " + totaldailyInsulinUsage + " units<br>Actual " + days + " day usage: " + totalinsulinunitsprescribed + " units<br>&nbsp;";
+       resultTable.innerHTML = `
+        <tr>
+          <th>Insulin Pen</th>
+          <th>Volume</th>
+          <th>Boxes</th>
+          <th>Days</th>
+        </tr>
+        ${generateInsulinRows(pens)}
+      `;
+      } else {
+	    resultDisplay.innerHTML = "Please enter valid doses in units.";
+        resultTable.innerHTML = "";
+      }
+    }
+
+  </script>
+</body>
+</html>
